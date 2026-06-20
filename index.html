@@ -3,6 +3,47 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Primary SEO -->
+    <title>Life Playground — Configurable Cellular Automaton Sandbox</title>
+    <meta
+      name="description"
+      content="A configurable, multi-state cellular-automaton playground in the browser. Conway's Game of Life is the 2-state case — define your own states, rules, and universe: totalistic automata, agent-based ecosystems, reaction-diffusion, or raw JS. Paint cells, tweak rules, share a link."
+    />
+    <link rel="canonical" href="https://life-sim.chakri.me/" />
+    <meta name="robots" content="index, follow" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="color-scheme" content="dark light" />
+    <meta name="author" content="chakri68" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Life Playground" />
+    <meta
+      property="og:title"
+      content="Life Playground — Configurable Cellular Automaton Sandbox"
+    />
+    <meta
+      property="og:description"
+      content="Define your own states, rules, and universe — totalistic automata, agent ecosystems, reaction-diffusion, or raw JS. Paint cells, tweak rules, hit play, share the whole universe in a link."
+    />
+    <meta property="og:url" content="https://life-sim.chakri.me/" />
+    <meta property="og:image" content="https://life-sim.chakri.me/og-image.png" />
+    <meta property="og:image:alt" content="Life Playground cellular-automaton sandbox" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="Life Playground — Configurable Cellular Automaton Sandbox"
+    />
+    <meta
+      name="twitter:description"
+      content="Define your own states, rules, and universe — totalistic automata, agent ecosystems, reaction-diffusion, or raw JS. Paint, tweak, play, share."
+    />
+    <meta name="twitter:image" content="https://life-sim.chakri.me/og-image.png" />
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <!-- Pixel display font: `block` so it never flashes a fallback (no shift). -->
@@ -18,7 +59,32 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
     <link rel="manifest" href="/site.webmanifest" />
-    <title>Life Playground</title>
+
+    <!-- Structured data: rich result eligibility -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Life Playground",
+        "url": "https://life-sim.chakri.me/",
+        "description": "A configurable, multi-state cellular-automaton playground. Define your own states, rules, and the kind of universe — totalistic automata, agent-based ecosystems, reaction-diffusion, or a transition function you write in raw JavaScript.",
+        "applicationCategory": "EducationalApplication",
+        "operatingSystem": "Any (web browser)",
+        "browserRequirements": "Requires JavaScript and HTML5 Canvas",
+        "image": "https://life-sim.chakri.me/og-image.png",
+        "isAccessibleForFree": true,
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "author": {
+          "@type": "Person",
+          "name": "chakri68",
+          "url": "https://github.com/chakri68"
+        }
+      }
+    </script>
   </head>
   <body>
     <div id="app"></div>
