@@ -79,6 +79,20 @@ const TOPICS: Record<string, Topic> = {
       { term: 'seed %', desc: 'Fraction of the grid this species fills on Randomize. Applies on the next re-seed.' },
     ],
   },
+  script: {
+    title: 'Manual rule (raw JS)',
+    intro: 'When the visual rule rows can’t express what you want, write the transition function yourself. It runs once per cell each generation and returns that cell’s next state. Hit Apply (or ⌘/Ctrl+Enter) to compile and run.',
+    terms: [
+      { term: 'self', desc: 'The current state of the cell being updated — an integer state id (0 is the first/“empty” state).' },
+      { term: 'count(s)', desc: 'How many neighbors are in state s, using the universe’s neighborhood (Moore = 8, Von Neumann = 4).' },
+      { term: 'get(dx, dy)', desc: 'The state of the neighbor at offset (dx, dy). Wraps around the edges (toroidal).' },
+      { term: 'x, y, gen', desc: 'The cell’s coordinates and the current generation number — for position- or time-dependent rules.' },
+      { term: 'rand()', desc: 'A random number in [0, 1) for stochastic rules.' },
+      { term: 'return <int>', desc: 'Return the cell’s next state. A non-number or out-of-range value leaves the cell unchanged.' },
+      { term: 'errors', desc: 'Syntax errors show when you Apply; a runtime error pauses the sim and shows the message. States and colors come from the States panel — reference them by index.' },
+      { term: 'shared links', desc: 'A manual rule opened from a shared link is shown but not run until you click Apply — so you can read the code before it executes. Presets you load yourself run immediately.' },
+    ],
+  },
   reaction: {
     title: 'Reaction-Diffusion (Gray-Scott)',
     intro: 'Two chemicals U and V diffuse and react across a continuous field. Tiny feed/kill changes flip between coral, mazes, spots and waves.',

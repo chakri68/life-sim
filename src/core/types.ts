@@ -63,8 +63,28 @@ export type SeedMode = 'sparse' | 'uniform';
  *  - 'reaction':   continuous Gray-Scott reaction-diffusion (uses `reaction`).
  *                  Cells hold two float concentrations instead of a discrete
  *                  state, producing coral / maze / spot / wave patterns.
+ *  - 'script':     discrete like 'totalistic', but the per-cell transition is a
+ *                  user-supplied JS function (`script`) instead of rule rows.
  */
-export type EngineKind = 'totalistic' | 'ecosystem' | 'reaction';
+export type EngineKind = 'totalistic' | 'ecosystem' | 'reaction' | 'script';
+
+/**
+ * A compiled manual-rule transition. Runs once per cell each generation and
+ * returns the cell's next state.
+ *  - self:  the cell's current state id
+ *  - count: neighbors in a given state (uses the universe's neighborhood)
+ *  - get:   a neighbor's state at an (dx, dy) offset, wrapping toroidally
+ *  - x, y:  cell coordinates; gen: current generation; rand: () => [0,1)
+ */
+export type ScriptFn = (
+  self: number,
+  count: (state: number) => number,
+  get: (dx: number, dy: number) => number,
+  x: number,
+  y: number,
+  gen: number,
+  rand: () => number,
+) => number;
 
 /**
  * Gray-Scott reaction-diffusion parameters. Two chemicals U and V diffuse and
@@ -138,4 +158,6 @@ export interface Config {
   ecosystem?: EcosystemParams;
   /** Required when engine = 'reaction'. */
   reaction?: ReactionParams;
+  /** Source of the transition function when engine = 'script'. */
+  script?: string;
 }
