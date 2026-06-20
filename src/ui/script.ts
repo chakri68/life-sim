@@ -1,4 +1,5 @@
 import type { Config } from '../core/types';
+import type { CodeEditor } from './codeEditor';
 import { el, clear } from './dom';
 
 export interface ScriptHooks {
@@ -20,9 +21,10 @@ const DOC = [
 ].join('\n');
 
 /**
- * Editor for the manual ('script') engine: a code box for the per-cell
- * transition function, an Apply button, an error readout, and an API cheat
- * sheet. Errors (compile + runtime) render in the red box below.
+ * Editor for the manual ('script') engine. CodeMirror is lazy-loaded (so it
+ * only ships when Manual mode is opened); if that fails we fall back to a plain
+ * textarea. The same editor instance is moved in/out of the Expand modal so
+ * there's a single source of truth for the code.
  */
 export function renderScript(container: HTMLElement, cfg: Config, hooks: ScriptHooks, pending = false): void {
   clear(container);
@@ -36,62 +38,50 @@ export function renderScript(container: HTMLElement, cfg: Config, hooks: ScriptH
   const notice = el('div', { class: 'script-notice' + (pending ? ' show' : '') },
     'Loaded from a shared link. Review the code below, then click Apply to run it.');
 
-  const editor = el('textarea', { class: 'script-editor', rows: '12' });
-  editor.value = cfg.script ?? '';
-  editor.spellcheck = false;
-
+  const host = el('div', { class: 'cm-host' }, el('span', { class: 'muted cm-loading' }, 'loading editor…'));
   const errBox = el('pre', { class: 'script-error' });
   hooks.register(errBox);
 
-  const showErr = (target: HTMLElement, err: string | null) => {
-    target.textContent = err ?? '';
-    target.classList.toggle('show', !!err);
-  };
+  let editor: CodeEditor | null = null;
+  let errTarget: HTMLElement = errBox; // where compile errors render (swaps to the modal)
 
-  // Compile `source`, render any error into `target`, clear the pending notice.
-  const apply = (source: string, target: HTMLElement) => {
-    const err = hooks.apply(source);
-    showErr(target, err);
+  const getValue = () => (editor ? editor.getValue() : cfg.script ?? '');
+
+  const apply = () => {
+    const err = hooks.apply(getValue());
+    errTarget.textContent = err ?? '';
+    errTarget.classList.toggle('show', !!err);
     if (!err) notice.classList.remove('show');
-    return err;
   };
 
-  const ctrlEnter = (e: KeyboardEvent, run: () => void) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); run(); }
-  };
+  const applyBtn = el('button', { class: 'btn primary', onclick: apply }, 'Apply');
+  const expandBtn = el('button', { class: 'btn', onclick: () => { if (editor) openModal(); } }, '⛶ Expand');
 
-  editor.addEventListener('keydown', (e) => ctrlEnter(e, () => apply(editor.value, errBox)));
-
-  const applyBtn = el('button', { class: 'btn primary', onclick: () => apply(editor.value, errBox) }, 'Apply');
-  const expandBtn = el('button', { class: 'btn', onclick: () => openModal() }, '⛶ Expand');
-
-  // Pop the editor into a large centered overlay for serious editing. The big
-  // textarea mirrors back into the inline one live, so closing never loses work.
+  // Pop the editor into a large overlay by moving its DOM there and back.
   function openModal(): void {
-    const big = el('textarea', { class: 'script-editor script-editor-modal' });
-    big.value = editor.value;
-    big.spellcheck = false;
-    big.addEventListener('input', () => { editor.value = big.value; });
-
+    if (!editor) return;
     const mErr = el('pre', { class: 'script-error' });
+    const modalHost = el('div', { class: 'cm-host cm-host-modal' });
+    modalHost.append(editor.dom);
+    errTarget = mErr;
+
     const close = () => {
-      editor.value = big.value;
+      host.append(editor!.dom);
+      errTarget = errBox;
       backdrop.remove();
       document.removeEventListener('keydown', onKey);
+      editor!.focus();
     };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') close();
-      else ctrlEnter(e, () => apply(big.value, mErr));
-    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') close(); };
 
     const modal = el('div', { class: 'modal script-modal', onclick: (e: Event) => e.stopPropagation() }, [
       el('div', { class: 'modal-head' }, [
         el('h3', {}, 'Manual rule  // raw JS'),
         el('button', { class: 'icon-btn', title: 'Close', onclick: close }, '✕'),
       ]),
-      big,
+      modalHost,
       el('div', { class: 'row' }, [
-        el('button', { class: 'btn primary', onclick: () => apply(big.value, mErr) }, 'Apply'),
+        el('button', { class: 'btn primary', onclick: apply }, 'Apply'),
         el('span', { class: 'muted script-hint' }, '⌘/Ctrl+Enter to apply · Esc to close'),
       ]),
       mErr,
@@ -99,13 +89,28 @@ export function renderScript(container: HTMLElement, cfg: Config, hooks: ScriptH
     const backdrop = el('div', { class: 'modal-backdrop', onclick: close }, [modal]);
     document.body.append(backdrop);
     document.addEventListener('keydown', onKey);
-    big.focus();
+    editor.focus();
   }
 
   container.append(
     notice,
-    editor,
+    host,
     el('div', { class: 'row' }, [applyBtn, expandBtn, el('span', { class: 'muted script-hint' }, 'or ⌘/Ctrl+Enter')]),
     errBox,
   );
+
+  const mount = (ed: CodeEditor) => { editor = ed; clear(host); host.append(ed.dom); };
+
+  // Lazy-load CodeMirror; fall back to a textarea if its chunk fails to load.
+  import('./codeEditor')
+    .then(({ createCodeEditor }) => mount(createCodeEditor({ doc: cfg.script ?? '', onApply: apply })))
+    .catch(() => {
+      const ta = el('textarea', { class: 'script-editor' });
+      ta.value = cfg.script ?? '';
+      ta.spellcheck = false;
+      ta.addEventListener('keydown', (e: KeyboardEvent) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); apply(); }
+      });
+      mount({ dom: ta, getValue: () => ta.value, focus: () => ta.focus(), destroy: () => {} });
+    });
 }
