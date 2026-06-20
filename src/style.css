@@ -93,6 +93,117 @@ body,
   flex-wrap: wrap;
 }
 
+/* ---- intro / loading sequence ----
+   The intro overlay is in the DOM from first paint (so the app never flashes),
+   but its title and the entrance animations stay dormant until JS adds `.booted`
+   — which only happens once the pixel font has loaded, so nothing renders in a
+   fallback font and there's no layout shift. */
+.intro {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+}
+.intro-title {
+  font-family: var(--font-pixel);
+  font-size: clamp(20px, 4vw, 34px);
+  color: var(--accent);
+  text-align: center;
+  letter-spacing: -0.5px;
+  opacity: 0; /* hidden until the font is ready (booted) */
+}
+
+/* Pre-boot resting states: keep the chrome hidden so it can animate in. */
+.booting .sidebar {
+  opacity: 0;
+}
+.booting .controlbar {
+  opacity: 0;
+  transform: translateY(140%);
+}
+
+/* Boot: the font is loaded, run the whole sequence from one shared t0. */
+.booted .intro {
+  animation: intro-fade 0.6s ease 1.5s forwards;
+}
+.booted .intro-title {
+  animation:
+    intro-appear 0.4s ease forwards,
+    intro-glow 1.4s ease-in-out infinite alternate,
+    intro-exit 0.6s cubic-bezier(0.4, 0, 0.2, 1) 1.45s forwards;
+}
+.booted .sidebar {
+  animation: sidebar-in 0.6s ease 1.5s both;
+}
+.booted .controlbar {
+  animation: controlbar-in 0.55s cubic-bezier(0.2, 0.9, 0.2, 1) 1.75s both;
+}
+
+@keyframes intro-appear {
+  to {
+    opacity: 1;
+  }
+}
+@keyframes intro-glow {
+  from {
+    text-shadow: 0 0 14px rgba(255, 176, 0, 0.3);
+  }
+  to {
+    text-shadow: 0 0 36px rgba(255, 176, 0, 0.85);
+  }
+}
+@keyframes intro-exit {
+  to {
+    transform: translateY(-26vh) scale(0.42);
+    opacity: 0;
+  }
+}
+@keyframes intro-fade {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+@keyframes sidebar-in {
+  from {
+    opacity: 0;
+    transform: translateX(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes controlbar-in {
+  from {
+    transform: translateY(140%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .intro {
+    display: none;
+  }
+  .intro-title,
+  .booting .sidebar,
+  .booting .controlbar {
+    opacity: 1;
+    transform: none;
+  }
+  .booted .sidebar,
+  .booted .controlbar,
+  .booted .intro-title {
+    animation: none;
+  }
+}
+
 .btn {
   background: var(--panel-2);
   color: var(--text);

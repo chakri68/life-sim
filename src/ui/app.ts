@@ -224,6 +224,28 @@ export class App {
     });
     this.bindResizer(resizer, sidebar);
     root.append(main, resizer, sidebar);
+
+    // Intro: the glowing title holds, then dissolves upward while the sidebar
+    // fades in and the control bar slides up (driven by CSS once `.booted` lands).
+    document.body.classList.add("booting");
+    const intro = el("div", { class: "intro" }, el("div", { class: "intro-title" }, "life_playground"));
+    root.append(intro);
+
+    const boot = () => {
+      document.body.classList.add("booted");
+      window.setTimeout(() => intro.remove(), 2300);
+    };
+    // Hold the intro until the pixel font is loaded so the title never renders
+    // in a fallback (which caused the layout shift), but cap the wait so a slow
+    // network can't stall the intro.
+    if (document.fonts?.load) {
+      Promise.race([
+        document.fonts.load('1em "Press Start 2P"'),
+        new Promise((res) => window.setTimeout(res, 1500)),
+      ]).then(boot, boot);
+    } else {
+      boot();
+    }
   }
 
   /** Drag the divider to widen/narrow the sidebar; width persists across reloads. */
