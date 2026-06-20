@@ -1,8 +1,9 @@
-import type { Config } from './types';
+import type { Config, ScriptFn } from './types';
 import { buildOffsets } from './neighborhood';
 import { step } from './stepper';
 import { stepEcosystem, seedEcosystem } from './steppers/ecosystem';
 import { stepReaction, seedReaction } from './steppers/reaction';
+import { stepScript } from './steppers/script';
 import { mulberry32 } from './rng';
 
 /**
@@ -35,6 +36,11 @@ export class Simulation {
 
   offsets: Int32Array;
   rand: () => number;
+
+  // Manual ('script') engine: the compiled transition + the last runtime error.
+  scriptFn: ScriptFn | null = null;
+  scriptError: string | null = null;
+
   private counts: Int32Array;
 
   constructor(cfg: Config) {
@@ -68,6 +74,24 @@ export class Simulation {
     }
   }
 
+  /**
+   * Compile cfg.script into the per-cell transition. This runs the user's own
+   * code locally via `new Function`. Returns a syntax-error message, or null on
+   * success. Runtime errors surface later through `scriptError`.
+   */
+  compileScript(): string | null {
+    const src = this.cfg.script ?? '';
+    try {
+      const fn = new Function('self', 'count', 'get', 'x', 'y', 'gen', 'rand', src);
+      this.scriptFn = fn as unknown as ScriptFn;
+      this.scriptError = null;
+      return null;
+    } catch (e) {
+      this.scriptFn = null;
+      return e instanceof Error ? e.message : String(e);
+    }
+  }
+
   step(): void {
     if (this.cfg.engine === 'ecosystem') {
       stepEcosystem(this); // advances generation internally
@@ -75,6 +99,16 @@ export class Simulation {
     }
     if (this.cfg.engine === 'reaction') {
       stepReaction(this); // advances generation internally
+      return;
+    }
+    if (this.cfg.engine === 'script') {
+      // Only swap (and count the generation) if the user's function ran clean.
+      if (stepScript(this)) {
+        const tmp = this.cur;
+        this.cur = this.next;
+        this.next = tmp;
+        this.generation++;
+      }
       return;
     }
     step(this.cur, this.next, this.cfg, this.offsets, this.counts, this.rand);

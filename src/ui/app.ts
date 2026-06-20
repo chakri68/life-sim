@@ -8,10 +8,17 @@ import { renderRules } from './ruleEditor';
 import { renderPalette } from './palette';
 import { renderEcosystem } from './params';
 import { renderReaction } from './reaction';
+import { renderScript } from './script';
 import { PopulationChart } from './chart';
 import { panelHeader, helpButton } from './help';
 
 const V_DISPLAY_HI = 0.4; // map V in [0, 0.4] across the colormap
+
+// Inline copy/clipboard icon (Feather "copy"), inherits the button's color.
+const COPY_ICON =
+  '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+  '<rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>' +
+  '<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
 
 const NEW_STATE_COLORS = ['#f5a623', '#9b59b6', '#1abc9c', '#e91e63', '#00bcd4', '#cddc39', '#ff5722'];
 
@@ -47,10 +54,19 @@ export class App {
   private playBtn!: HTMLButtonElement;
   private presetSel!: HTMLSelectElement;
   private shareNote!: HTMLElement;
+  private scriptErrorEl?: HTMLElement;
+  private scriptPending = false; // a URL-loaded script awaiting an explicit Apply
 
   constructor(root: HTMLElement) {
-    this.cfg = readUrl() ?? defaultConfig();
+    const fromUrl = readUrl();
+    this.cfg = fromUrl ?? defaultConfig();
     this.sim = new Simulation(this.cfg);
+    // Never auto-run a script that came from a shared link — it waits for Apply.
+    // Locally-built configs (presets) are trusted and compile immediately.
+    if (this.cfg.engine === 'script') {
+      if (fromUrl) this.scriptPending = true;
+      else this.sim.compileScript();
+    }
     this.sim.seed();
 
     this.buildLayout(root);
@@ -116,7 +132,7 @@ export class App {
       el('p', { class: 'muted' }, '// a configurable multi-state cellular automaton. paint cells, tweak rules, watch what emerges.'),
       el('div', { class: 'row' }, [
         this.presetSel,
-        el('button', { class: 'btn', onclick: () => this.share() }, 'Copy link'),
+        el('button', { class: 'btn btn-icon', title: 'Copy share link', 'aria-label': 'Copy share link', innerHTML: COPY_ICON, onclick: () => this.share() }),
         helpButton('preset'),
       ]),
       this.shareNote,
@@ -132,7 +148,42 @@ export class App {
       ]),
     ]);
 
-    root.append(el('div', { class: 'main' }, [topbar, canvasWrap]), sidebar);
+    const main = el('div', { class: 'main' }, [topbar, canvasWrap]);
+    const resizer = el('div', { class: 'resizer', title: 'Drag to resize the panel' });
+    this.bindResizer(resizer, sidebar);
+    root.append(main, resizer, sidebar);
+  }
+
+  /** Drag the divider to widen/narrow the sidebar; width persists across reloads. */
+  private bindResizer(handle: HTMLElement, sidebar: HTMLElement): void {
+    const MIN = 320, MAX = 900;
+    try {
+      const saved = Number(localStorage.getItem('sidebarW'));
+      if (saved >= MIN && saved <= MAX) sidebar.style.width = saved + 'px';
+    } catch { /* localStorage may be unavailable */ }
+
+    let startX = 0, startW = 0, dragging = false;
+    handle.addEventListener('mousedown', (e) => {
+      dragging = true;
+      startX = e.clientX;
+      startW = sidebar.offsetWidth;
+      document.body.classList.add('resizing');
+      e.preventDefault();
+    });
+    window.addEventListener('mousemove', (e) => {
+      if (!dragging) return;
+      // Dragging left (toward the canvas) widens the sidebar.
+      const w = Math.max(MIN, Math.min(MAX, startW + (startX - e.clientX)));
+      sidebar.style.width = w + 'px';
+      this.renderer.resize();
+      this.chart.resize();
+    });
+    window.addEventListener('mouseup', () => {
+      if (!dragging) return;
+      dragging = false;
+      document.body.classList.remove('resizing');
+      try { localStorage.setItem('sidebarW', String(sidebar.offsetWidth)); } catch { /* ignore */ }
+    });
   }
 
   // ---- panels -------------------------------------------------------------
@@ -161,6 +212,15 @@ export class App {
         applyColormap: () => { this.renderer.setColormap(this.cfg.reaction!.colors); this.draw(); },
         reseed: () => { this.sim.seed(); this.chartReset(); this.draw(); },
       });
+    } else if (this.cfg.engine === 'script') {
+      this.configPanel.append(panelHeader('Manual rule  // raw JS', 'script'));
+      const body = el('div', { class: 'params-body' });
+      this.configPanel.append(body);
+      renderScript(body, this.cfg, {
+        apply: (src) => this.applyScript(src),
+        commit: () => this.commit(),
+        register: (errEl) => { this.scriptErrorEl = errEl; },
+      }, this.scriptPending);
     } else {
       this.configPanel.append(panelHeader('Rules  (top-to-bottom, first match wins)', 'rules'));
       const body = el('div', { class: 'rules-body' });
@@ -194,6 +254,25 @@ export class App {
 
   private commit(): void {
     writeUrl(this.cfg);
+  }
+
+  /** Compile a manual-rule edit. Returns a compile-error message, or null. */
+  private applyScript(src: string): string | null {
+    this.cfg.script = src;
+    const err = this.sim.compileScript();
+    if (!err) { this.scriptPending = false; this.commit(); this.draw(); }
+    return err;
+  }
+
+  /** Pause and show a manual-rule runtime error once it occurs mid-run. */
+  private surfaceScriptError(): void {
+    if (!this.sim.scriptError) return;
+    if (this.running) this.toggleRun();
+    if (this.scriptErrorEl) {
+      this.scriptErrorEl.textContent = 'runtime error: ' + this.sim.scriptError;
+      this.scriptErrorEl.classList.add('show');
+    }
+    this.sim.scriptError = null; // consumed — don't re-fire every frame
   }
 
   private addState(): void {
@@ -259,6 +338,8 @@ export class App {
   private loadConfig(cfg: Config): void {
     this.cfg = cfg;
     this.sim = new Simulation(cfg);
+    this.scriptPending = false; // presets are trusted — no Apply gate
+    if (cfg.engine === 'script') this.sim.compileScript();
     this.sim.seed();
     this.brush = Math.min(1, cfg.states.length - 1);
     this.renderer.fit(cfg);
@@ -331,6 +412,7 @@ export class App {
 
     this.present();
     this.updateStats();
+    this.surfaceScriptError();
     requestAnimationFrame(this.tick);
   }
 

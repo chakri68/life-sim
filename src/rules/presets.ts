@@ -239,6 +239,30 @@ const maze = () => reactionPreset('Maze', 0.029, 0.057, RAMP_ICE);
 const worms = () => reactionPreset('Worms / fingerprints', 0.054, 0.063, RAMP_AMBER);
 const waves = () => reactionPreset('Waves', 0.014, 0.045, RAMP_INDIGO);
 
+const MANUAL_SCRIPT = `// Conway's Life — edit me, then hit Apply.
+const n = count(1);
+if (self === 1) return (n === 2 || n === 3) ? 1 : 0;
+return n === 3 ? 1 : 0;`;
+
+/** Blank-slate manual engine: write the transition function in raw JS. */
+function manual(): Config {
+  return {
+    name: 'Manual (JS)',
+    width: W,
+    height: H,
+    neighborhood: moore(),
+    engine: 'script',
+    seedMode: 'sparse',
+    seedDensity: 0.22,
+    states: [
+      { name: 'Dead', color: '#0b0e14' },
+      { name: 'Alive', color: '#e8e8e8' },
+    ],
+    rules: [],
+    script: MANUAL_SCRIPT,
+  };
+}
+
 export interface Preset {
   id: string;
   label: string;
@@ -258,6 +282,7 @@ export const PRESETS: Preset[] = [
   { id: 'maze', label: 'Reaction · Maze', build: maze },
   { id: 'worms', label: 'Reaction · Worms', build: worms },
   { id: 'waves', label: 'Reaction · Waves', build: waves },
+  { id: 'manual', label: 'Manual (JS)', build: manual },
 ];
 
 /** Pattern presets selectable from the reaction params panel (sets F/k). */
