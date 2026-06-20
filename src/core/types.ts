@@ -54,6 +54,72 @@ export interface Neighborhood {
 
 export type SeedMode = 'sparse' | 'uniform';
 
+/**
+ * Which stepping engine drives the universe.
+ *  - 'totalistic': the count-based rewrite engine (uses `rules`).
+ *  - 'ecosystem':  agent-based multi-species engine with per-cell energy
+ *                  (uses `ecosystem`). Generalizes WaTor predator-prey into
+ *                  arbitrary food chains and webs.
+ *  - 'reaction':   continuous Gray-Scott reaction-diffusion (uses `reaction`).
+ *                  Cells hold two float concentrations instead of a discrete
+ *                  state, producing coral / maze / spot / wave patterns.
+ */
+export type EngineKind = 'totalistic' | 'ecosystem' | 'reaction';
+
+/**
+ * Gray-Scott reaction-diffusion parameters. Two chemicals U and V diffuse and
+ * react; `feed` adds U, `kill` removes V. Small changes in feed/kill produce
+ * wildly different Turing patterns.
+ */
+export interface ReactionParams {
+  feed: number;       // F: feed rate of U
+  kill: number;       // k: kill rate of V
+  du: number;         // diffusion rate of U
+  dv: number;         // diffusion rate of V
+  dt: number;         // integration timestep
+  iterations: number; // simulation sub-steps per displayed step
+  /** Colormap stops (hex), low → high concentration of V. */
+  colors: string[];
+}
+
+/**
+ * Behavior of one species in the ecosystem engine. There is one entry per
+ * state id (index matches Config.states); index 0 is the Empty placeholder and
+ * is ignored. Food chains/webs emerge purely from each species' `diet`.
+ */
+export interface SpeciesParams {
+  /** Can it move into empty neighbors? Plants/producers are immobile. */
+  mobile: boolean;
+  /** Chance (0–1) a mobile unit acts (hunts/moves/breeds) on a given step;
+   *  the rest of the time it rests in place. Defaults to 1. Ignored if immobile. */
+  moveProb?: number;
+  /** Chance (0–1) a pounce on adjacent prey actually catches it. On a miss the
+   *  prey escapes and the predator wanders instead. Defaults to 1. Needs a diet. */
+  huntSuccess?: number;
+  /** Only hunt when energy is below this. undefined = always hunt (the default).
+   *  A sated predator above the threshold spares nearby prey and just wanders. */
+  huntThreshold?: number;
+  /** State ids this species eats (moving onto and consuming the prey). */
+  diet: number[];
+  /** Steps before it reproduces. 0 = never breeds. */
+  breedTime: number;
+  /** Steps before it dies of old age (absolute lifespan). 0 = immortal. */
+  maxAge?: number;
+  /** Energy lost per step. 0 = never starves (e.g. plants, WaTor fish). */
+  metabolism: number;
+  /** Energy a newborn / freshly seeded individual starts with. */
+  startEnergy: number;
+  /** Energy gained per prey eaten. */
+  gain: number;
+  /** Fraction of the grid seeded with this species on Randomize. */
+  seedDensity: number;
+}
+
+export interface EcosystemParams {
+  /** Parallel to Config.states; species[0] is the (ignored) Empty slot. */
+  species: SpeciesParams[];
+}
+
 /** A complete, serializable description of a universe. */
 export interface Config {
   name: string;
@@ -66,4 +132,10 @@ export interface Config {
   seedMode: SeedMode;
   /** Fraction of cells seeded non-empty when seedMode = 'sparse'. */
   seedDensity: number;
+  /** Stepping engine; absent/legacy configs default to 'totalistic'. */
+  engine?: EngineKind;
+  /** Required when engine = 'ecosystem'. */
+  ecosystem?: EcosystemParams;
+  /** Required when engine = 'reaction'. */
+  reaction?: ReactionParams;
 }

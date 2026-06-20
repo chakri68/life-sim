@@ -6,6 +6,12 @@ import { writeUrl, readUrl, encodeConfig } from '../rules/serialize';
 import { el, option, clear } from './dom';
 import { renderRules } from './ruleEditor';
 import { renderPalette } from './palette';
+import { renderEcosystem } from './params';
+import { renderReaction } from './reaction';
+import { PopulationChart } from './chart';
+import { panelHeader, helpButton } from './help';
+
+const V_DISPLAY_HI = 0.4; // map V in [0, 0.4] across the colormap
 
 const NEW_STATE_COLORS = ['#f5a623', '#9b59b6', '#1abc9c', '#e91e63', '#00bcd4', '#cddc39', '#ff5722'];
 
@@ -28,9 +34,14 @@ export class App {
   private panning = false;
   private panLast = { x: 0, y: 0 };
 
+  // population chart sampling
+  private chart!: PopulationChart;
+  private lastSampleGen = -1;
+
   // DOM refs
   private canvas!: HTMLCanvasElement;
-  private rulesBody!: HTMLElement;
+  private configPanel!: HTMLElement;
+  private statesSection!: HTMLElement;
   private paletteBody!: HTMLElement;
   private statsEl!: HTMLElement;
   private playBtn!: HTMLButtonElement;
@@ -45,10 +56,12 @@ export class App {
     this.buildLayout(root);
     this.renderer = new Renderer(this.canvas);
     this.renderer.fit(this.cfg);
+    this.chart.resize();
+    this.syncEngineView();
 
     this.bindCanvas();
     this.rebuildPanels();
-    window.addEventListener('resize', () => { this.renderer.resize(); });
+    window.addEventListener('resize', () => { this.renderer.resize(); this.chart.resize(); });
 
     this.tick = this.tick.bind(this);
     requestAnimationFrame(this.tick);
@@ -72,8 +85,8 @@ export class App {
     const topbar = el('div', { class: 'topbar' }, [
       this.playBtn,
       el('button', { class: 'btn', onclick: () => this.stepOnce() }, '⏭ Step'),
-      el('button', { class: 'btn', onclick: () => { this.sim.clear(); this.draw(); } }, 'Clear'),
-      el('button', { class: 'btn', onclick: () => { this.sim.seed(); this.draw(); } }, 'Randomize'),
+      el('button', { class: 'btn', onclick: () => this.resetHistory(() => this.sim.clear()) }, 'Clear'),
+      el('button', { class: 'btn', onclick: () => this.resetHistory(() => this.sim.seed()) }, 'Randomize'),
       el('button', { class: 'btn', onclick: () => { this.renderer.center(); } }, 'Reset view'),
       el('div', { class: 'ctl' }, [el('label', {}, 'Speed'), speed]),
       el('div', { class: 'ctl' }, [el('label', {}, 'Brush'), brush]),
@@ -93,7 +106,10 @@ export class App {
 
     this.shareNote = el('span', { class: 'muted share-note' });
     this.paletteBody = el('div', { class: 'palette-body' });
-    this.rulesBody = el('div', { class: 'rules-body' });
+    this.configPanel = el('section', { class: 'panel' });
+
+    const chartCanvas = el('canvas', { class: 'pop-chart' });
+    this.chart = new PopulationChart(chartCanvas);
 
     const sidebar = el('div', { class: 'sidebar' }, [
       el('h1', {}, 'life_playground'),
@@ -101,12 +117,17 @@ export class App {
       el('div', { class: 'row' }, [
         this.presetSel,
         el('button', { class: 'btn', onclick: () => this.share() }, 'Copy link'),
+        helpButton('preset'),
       ]),
       this.shareNote,
-      section('States', this.paletteBody),
-      section('Rules  (top-to-bottom, first match wins)', this.rulesBody),
+      section('Population', chartCanvas, 'population'),
+      this.statesSection = section('States', this.paletteBody, 'states'),
+      this.configPanel,
       el('div', { class: 'help muted' }, [
-        el('p', {}, 'Left-drag: paint · Right/Middle-drag: pan · Wheel: zoom'),
+        el('p', {}, [
+          el('span', {}, 'Left-drag: paint · Right/Middle-drag: pan · Wheel: zoom  '),
+          helpButton('controls'),
+        ]),
         el('p', {}, 'A rule reads: WHEN current state, IF neighbor counts match, → become a new state.'),
       ]),
     ]);
@@ -117,24 +138,53 @@ export class App {
   // ---- panels -------------------------------------------------------------
 
   private rebuildPanels(): void {
-    this.renderRulesPanel();
-    this.renderPalettePanel();
+    // The States/palette section only applies to the discrete engines.
+    this.statesSection.style.display = this.cfg.engine === 'reaction' ? 'none' : '';
+    this.renderConfigPanel();
+    if (this.cfg.engine !== 'reaction') this.renderPalettePanel();
   }
 
-  private renderRulesPanel(): void {
-    renderRules(
-      this.rulesBody,
-      this.cfg,
-      () => this.commit(),
-      () => { this.renderRulesPanel(); this.commit(); },
-    );
+  /** Render the engine-appropriate editor: rules, species, or reaction params. */
+  private renderConfigPanel(): void {
+    clear(this.configPanel);
+    if (this.cfg.engine === 'ecosystem') {
+      this.configPanel.append(panelHeader('Species  // food web', 'ecosystem'));
+      const body = el('div', { class: 'params-body' });
+      this.configPanel.append(body);
+      renderEcosystem(body, this.cfg, () => this.commit());
+    } else if (this.cfg.engine === 'reaction') {
+      this.configPanel.append(panelHeader('Reaction-Diffusion  // Gray-Scott', 'reaction'));
+      const body = el('div', { class: 'params-body' });
+      this.configPanel.append(body);
+      renderReaction(body, this.cfg, {
+        commit: () => this.commit(),
+        applyColormap: () => { this.renderer.setColormap(this.cfg.reaction!.colors); this.draw(); },
+        reseed: () => { this.sim.seed(); this.chartReset(); this.draw(); },
+      });
+    } else {
+      this.configPanel.append(panelHeader('Rules  (top-to-bottom, first match wins)', 'rules'));
+      const body = el('div', { class: 'rules-body' });
+      this.configPanel.append(body);
+      renderRules(
+        body,
+        this.cfg,
+        () => this.commit(),
+        () => { this.renderConfigPanel(); this.commit(); },
+      );
+    }
   }
 
   private renderPalettePanel(): void {
     renderPalette(this.paletteBody, this.cfg, {
       brush: this.brush,
       setBrush: (i) => { this.brush = i; this.renderPalettePanel(); },
-      commit: () => { this.renderer.setPalette(this.cfg); this.renderPalettePanel(); this.commit(); this.draw(); },
+      commit: () => {
+        this.renderer.setPalette(this.cfg);
+        this.chart.setColors(this.cfg);
+        this.renderPalettePanel();
+        this.commit();
+        this.draw();
+      },
       addState: () => this.addState(),
       removeState: (i) => this.removeState(i),
     });
@@ -149,8 +199,15 @@ export class App {
   private addState(): void {
     const color = NEW_STATE_COLORS[(this.cfg.states.length - 1) % NEW_STATE_COLORS.length];
     this.cfg.states.push({ name: `State ${this.cfg.states.length}`, color });
+    // Keep the ecosystem species array parallel to states.
+    if (this.cfg.engine === 'ecosystem' && this.cfg.ecosystem) {
+      this.cfg.ecosystem.species.push({
+        mobile: true, moveProb: 1, huntSuccess: 1, diet: [], breedTime: 8, maxAge: 0, metabolism: 1, startEnergy: 8, gain: 4, seedDensity: 0.04,
+      });
+    }
     this.sim.refresh();
     this.renderer.setPalette(this.cfg);
+    this.chart.setColors(this.cfg);
     this.rebuildPanels();
     this.commit();
   }
@@ -173,10 +230,20 @@ export class App {
       }
     }
 
+    // Remap ecosystem species + their diets, then drop the removed species.
+    if (this.cfg.engine === 'ecosystem' && this.cfg.ecosystem) {
+      const species = this.cfg.ecosystem.species;
+      for (const sp of species) {
+        sp.diet = sp.diet.filter((d) => d !== idx).map((d) => (d > idx ? d - 1 : d));
+      }
+      species.splice(idx, 1);
+    }
+
     this.cfg.states.splice(idx, 1);
     this.brush = Math.min(remap(this.brush), this.cfg.states.length - 1);
     this.sim.refresh();
     this.renderer.setPalette(this.cfg);
+    this.chartReset();
     this.rebuildPanels();
     this.commit();
     this.draw();
@@ -195,9 +262,36 @@ export class App {
     this.sim.seed();
     this.brush = Math.min(1, cfg.states.length - 1);
     this.renderer.fit(cfg);
+    this.syncEngineView();
     this.rebuildPanels();
     this.commit();
     this.draw();
+  }
+
+  /** Set up renderer colormap + chart series for the current engine. */
+  private syncEngineView(): void {
+    if (this.cfg.engine === 'reaction' && this.cfg.reaction) {
+      this.renderer.setColormap(this.cfg.reaction.colors);
+    }
+    this.chartReset();
+  }
+
+  private highColor(): string {
+    const c = this.cfg.reaction?.colors;
+    return c && c.length ? c[c.length - 1] : '#4f8cff';
+  }
+
+  /** Reset the chart series for the current engine and resync sampling. */
+  private chartReset(): void {
+    if (this.cfg.engine === 'reaction') this.chart.resetField(this.highColor());
+    else this.chart.reset(this.cfg);
+    this.lastSampleGen = -1;
+  }
+
+  /** Render the grid (discrete) or the V field (continuous) for this engine. */
+  private present(): void {
+    if (this.cfg.engine === 'reaction') this.renderer.drawField(this.sim.v, 0, V_DISPLAY_HI);
+    else this.renderer.draw(this.sim.cur);
   }
 
   // ---- run loop -----------------------------------------------------------
@@ -210,6 +304,13 @@ export class App {
 
   private stepOnce(): void {
     this.sim.step();
+    this.draw();
+  }
+
+  /** Run a grid-resetting action and wipe the chart history. */
+  private resetHistory(action: () => void): void {
+    action();
+    this.chartReset();
     this.draw();
   }
 
@@ -228,22 +329,43 @@ export class App {
       if (this.acc > this.speed) this.acc = this.speed;
     }
 
-    this.renderer.draw(this.sim.cur);
+    this.present();
     this.updateStats();
     requestAnimationFrame(this.tick);
   }
 
   private draw(): void {
-    this.renderer.draw(this.sim.cur);
+    this.present();
     this.updateStats();
   }
 
   private updateStats(): void {
+    const sampleNow = this.sim.generation !== this.lastSampleGen;
+
+    if (this.cfg.engine === 'reaction') {
+      const mv = this.sim.meanV();
+      if (sampleNow) { this.chart.push([mv]); this.lastSampleGen = this.sim.generation; }
+      this.chart.draw();
+      clear(this.statsEl);
+      this.statsEl.append(el('span', { class: 'gen' }, `Step ${this.sim.generation}`));
+      this.statsEl.append(
+        el('span', { class: 'pop' }, [
+          el('span', { class: 'brush-dot', style: `background:${this.highColor()}` }),
+          `mean V ${mv.toFixed(3)}`,
+        ]),
+      );
+      return;
+    }
+
     const pop = this.sim.population();
+    if (sampleNow) { this.chart.push(pop); this.lastSampleGen = this.sim.generation; }
+    this.chart.draw();
+
+    const skipEmpty = this.cfg.seedMode === 'sparse' || this.cfg.engine === 'ecosystem';
     clear(this.statsEl);
     this.statsEl.append(el('span', { class: 'gen' }, `Gen ${this.sim.generation}`));
     this.cfg.states.forEach((s, i) => {
-      if (i === 0 && this.cfg.seedMode === 'sparse') return; // skip "empty/dead"
+      if (i === 0 && skipEmpty) return; // skip "empty/dead"
       this.statsEl.append(
         el('span', { class: 'pop' }, [
           el('span', { class: 'brush-dot', style: `background:${s.color}` }),
@@ -310,6 +432,6 @@ export class App {
   }
 }
 
-function section(title: string, body: HTMLElement): HTMLElement {
-  return el('section', { class: 'panel' }, [el('h2', {}, title), body]);
+function section(title: string, body: HTMLElement, helpId?: string): HTMLElement {
+  return el('section', { class: 'panel' }, [panelHeader(title, helpId), body]);
 }
