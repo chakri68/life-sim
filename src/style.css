@@ -308,9 +308,19 @@ select { cursor: pointer; }
   overflow-x: auto;
 }
 
-/* expanded editor modal */
+/* CodeMirror host (inline + expanded) */
+.cm-host {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  min-height: 220px;
+}
+.cm-host .cm-editor { height: 220px; }
+.cm-loading { display: inline-block; padding: 12px; font-size: 12px; }
+
 .modal.script-modal { width: min(920px, 100%); }
-.script-editor-modal { min-height: 60vh; margin-top: 12px; font-size: 13px; }
+.cm-host-modal { margin-top: 12px; min-height: 62vh; }
+.cm-host-modal .cm-editor { height: 62vh; }
 
 /* ---- help "?" buttons + info modal ---- */
 .sidebar h2.panel-head { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; }
