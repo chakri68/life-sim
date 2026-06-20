@@ -228,7 +228,11 @@ export class App {
     // Intro: the glowing title holds, then dissolves upward while the sidebar
     // fades in and the control bar slides up (driven by CSS once `.booted` lands).
     document.body.classList.add("booting");
-    const intro = el("div", { class: "intro" }, el("div", { class: "intro-title" }, "life_playground"));
+    const intro = el(
+      "div",
+      { class: "intro" },
+      el("div", { class: "intro-title" }, "life_playground"),
+    );
     root.append(intro);
 
     const boot = () => {
