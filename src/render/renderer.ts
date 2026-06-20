@@ -20,6 +20,7 @@ export class Renderer {
   private bctx: CanvasRenderingContext2D;
   private img: ImageData;
   private palette: RGB[] = [];
+  private lut = new Uint8Array(256 * 3); // colormap LUT for continuous fields
   private gw = 0;
   private gh = 0;
   private dpr = 1;
@@ -49,6 +50,23 @@ export class Renderer {
 
   setPalette(cfg: Config): void {
     this.palette = cfg.states.map((s) => hexToRgb(s.color));
+  }
+
+  /** Build a 256-entry RGB lookup table by interpolating the colormap stops. */
+  setColormap(colors: string[]): void {
+    const stops = colors.map(hexToRgb);
+    if (stops.length === 0) stops.push({ r: 0, g: 0, b: 0 });
+    if (stops.length === 1) stops.push(stops[0]);
+    const lut = this.lut;
+    for (let i = 0; i < 256; i++) {
+      const t = (i / 255) * (stops.length - 1);
+      const s = Math.min(stops.length - 2, Math.floor(t));
+      const f = t - s;
+      const a = stops[s], b = stops[s + 1];
+      lut[i * 3] = a.r + (b.r - a.r) * f;
+      lut[i * 3 + 1] = a.g + (b.g - a.g) * f;
+      lut[i * 3 + 2] = a.b + (b.b - a.b) * f;
+    }
   }
 
   /** Match the backing store to the element's CSS size (handles HiDPI). */
@@ -81,7 +99,31 @@ export class Renderer {
       data[o + 3] = 255;
     }
     this.bctx.putImageData(this.img, 0, 0);
+    this.present();
+  }
 
+  /** Draw a continuous scalar field through the colormap (maps [lo, hi] → LUT). */
+  drawField(field: Float32Array, lo: number, hi: number): void {
+    const data = this.img.data;
+    const lut = this.lut;
+    const inv = 1 / (hi - lo);
+    for (let i = 0; i < field.length; i++) {
+      let t = (field[i] - lo) * inv;
+      t = t < 0 ? 0 : t > 1 ? 1 : t;
+      const idx = (t * 255) | 0;
+      const o = i * 4;
+      const li = idx * 3;
+      data[o] = lut[li];
+      data[o + 1] = lut[li + 1];
+      data[o + 2] = lut[li + 2];
+      data[o + 3] = 255;
+    }
+    this.bctx.putImageData(this.img, 0, 0);
+    this.present();
+  }
+
+  /** Blit the offscreen buffer to the canvas through the camera transform. */
+  private present(): void {
     const ctx = this.ctx;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.fillStyle = '#05070b';
