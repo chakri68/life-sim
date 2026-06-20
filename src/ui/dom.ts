@@ -12,9 +12,9 @@ export function el<K extends keyof HTMLElementTagNameMap>(
   for (const key in attrs) {
     const v = attrs[key];
     if (v == null || v === false) continue;
-    if (key === 'class') node.className = String(v);
-    else if (key === 'style') node.setAttribute('style', String(v));
-    else if (key.startsWith('on') && typeof v === 'function') {
+    if (key === "class") node.className = String(v);
+    else if (key === "style") node.setAttribute("style", String(v));
+    else if (key.startsWith("on") && typeof v === "function") {
       node.addEventListener(key.slice(2).toLowerCase(), v as EventListener);
     } else if (key in node) {
       (node as Record<string, unknown>)[key] = v;
@@ -30,8 +30,12 @@ export function el<K extends keyof HTMLElementTagNameMap>(
   return node;
 }
 
-export function option(value: string | number, label: string, selected: boolean): HTMLOptionElement {
-  return el('option', { value: String(value), selected }, label);
+export function option(
+  value: string | number,
+  label: string,
+  selected: boolean,
+): HTMLOptionElement {
+  return el("option", { value: String(value), selected }, label);
 }
 
 export function clear(node: HTMLElement): void {

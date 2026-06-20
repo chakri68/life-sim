@@ -1,10 +1,10 @@
-import type { Config, ScriptFn } from './types';
-import { buildOffsets } from './neighborhood';
-import { step } from './stepper';
-import { stepEcosystem, seedEcosystem } from './steppers/ecosystem';
-import { stepReaction, seedReaction } from './steppers/reaction';
-import { stepScript } from './steppers/script';
-import { mulberry32 } from './rng';
+import type { Config, ScriptFn } from "./types";
+import { buildOffsets } from "./neighborhood";
+import { step } from "./stepper";
+import { stepEcosystem, seedEcosystem } from "./steppers/ecosystem";
+import { stepReaction, seedReaction } from "./steppers/reaction";
+import { stepScript } from "./steppers/script";
+import { mulberry32 } from "./rng";
 
 /**
  * Owns the grid state and ties together config + neighborhood + stepper.
@@ -23,8 +23,8 @@ export class Simulation {
 
   // Attribute buffers (used by the ecosystem engine).
   energy: Int16Array;
-  age: Int16Array;   // steps since birth/last breed — drives the breed timer
-  life: Int16Array;  // absolute age — drives lifespan (not reset on breeding)
+  age: Int16Array; // steps since birth/last breed — drives the breed timer
+  life: Int16Array; // absolute age — drives lifespan (not reset on breeding)
   moved: Uint8Array;
   order: Int32Array;
 
@@ -63,8 +63,12 @@ export class Simulation {
     this.rand = Math.random;
   }
 
-  get width() { return this.cfg.width; }
-  get height() { return this.cfg.height; }
+  get width() {
+    return this.cfg.width;
+  }
+  get height() {
+    return this.cfg.height;
+  }
 
   /** Rebuild derived buffers after the config's shape/palette changes. */
   refresh(): void {
@@ -80,9 +84,18 @@ export class Simulation {
    * success. Runtime errors surface later through `scriptError`.
    */
   compileScript(): string | null {
-    const src = this.cfg.script ?? '';
+    const src = this.cfg.script ?? "";
     try {
-      const fn = new Function('self', 'count', 'get', 'x', 'y', 'gen', 'rand', src);
+      const fn = new Function(
+        "self",
+        "count",
+        "get",
+        "x",
+        "y",
+        "gen",
+        "rand",
+        src,
+      );
       this.scriptFn = fn as unknown as ScriptFn;
       this.scriptError = null;
       return null;
@@ -93,15 +106,15 @@ export class Simulation {
   }
 
   step(): void {
-    if (this.cfg.engine === 'ecosystem') {
+    if (this.cfg.engine === "ecosystem") {
       stepEcosystem(this); // advances generation internally
       return;
     }
-    if (this.cfg.engine === 'reaction') {
+    if (this.cfg.engine === "reaction") {
       stepReaction(this); // advances generation internally
       return;
     }
-    if (this.cfg.engine === 'script') {
+    if (this.cfg.engine === "script") {
       // Only swap (and count the generation) if the user's function ran clean.
       if (stepScript(this)) {
         const tmp = this.cur;
@@ -119,7 +132,7 @@ export class Simulation {
   }
 
   clear(): void {
-    if (this.cfg.engine === 'reaction') {
+    if (this.cfg.engine === "reaction") {
       this.u.fill(1); // U=1, V=0 is the trivial steady state
       this.v.fill(0);
       this.generation = 0;
@@ -135,12 +148,12 @@ export class Simulation {
   /** Random fill according to the config's engine / seed mode. */
   seed(seedValue = (Math.random() * 1e9) | 0): void {
     const rand = mulberry32(seedValue);
-    if (this.cfg.engine === 'ecosystem') {
+    if (this.cfg.engine === "ecosystem") {
       seedEcosystem(this, rand);
       this.generation = 0;
       return;
     }
-    if (this.cfg.engine === 'reaction') {
+    if (this.cfg.engine === "reaction") {
       seedReaction(this, rand);
       this.generation = 0;
       return;
@@ -149,7 +162,7 @@ export class Simulation {
     const n = states.length;
     const a = this.cur;
     for (let i = 0; i < a.length; i++) {
-      if (seedMode === 'uniform') {
+      if (seedMode === "uniform") {
         a[i] = (rand() * n) | 0;
       } else {
         a[i] = rand() < seedDensity ? 1 + ((rand() * (n - 1)) | 0) : 0;
@@ -161,12 +174,15 @@ export class Simulation {
   /** Paint a filled square of the given radius centered on a cell. */
   paint(cx: number, cy: number, state: number, radius = 0): void {
     const { width: w, height: h } = this.cfg;
-    const eco = this.cfg.engine === 'ecosystem';
-    const reaction = this.cfg.engine === 'reaction';
-    const startEnergy = eco ? (this.cfg.ecosystem?.species[state]?.startEnergy ?? 0) : 0;
+    const eco = this.cfg.engine === "ecosystem";
+    const reaction = this.cfg.engine === "reaction";
+    const startEnergy = eco
+      ? (this.cfg.ecosystem?.species[state]?.startEnergy ?? 0)
+      : 0;
     for (let dy = -radius; dy <= radius; dy++) {
       for (let dx = -radius; dx <= radius; dx++) {
-        const x = cx + dx, y = cy + dy;
+        const x = cx + dx,
+          y = cy + dy;
         if (x < 0 || y < 0 || x >= w || y >= h) continue;
         const i = y * w + x;
         if (reaction) {
