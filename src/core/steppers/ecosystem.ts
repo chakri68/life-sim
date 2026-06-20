@@ -1,4 +1,4 @@
-import type { Simulation } from '../sim';
+import type { Simulation } from "../sim";
 
 // Multi-species agent engine — a generalization of WaTor predator-prey.
 //
@@ -79,7 +79,12 @@ export function stepEcosystem(sim: Simulation): void {
 
     // Mobility: a mobile unit may rest this step (no hunt/move/breed). It still
     // aged and paid metabolism above. Immobile producers ignore this.
-    if (sp.mobile && sp.moveProb !== undefined && sp.moveProb < 1 && rand() >= sp.moveProb) {
+    if (
+      sp.mobile &&
+      sp.moveProb !== undefined &&
+      sp.moveProb < 1 &&
+      rand() >= sp.moveProb
+    ) {
       moved[i] = 1;
       continue;
     }
@@ -91,8 +96,10 @@ export function stepEcosystem(sim: Simulation): void {
     for (let k = 0; k < nOff; k++) {
       let nx = x + offs[k * 2];
       let ny = y + offs[k * 2 + 1];
-      if (nx < 0) nx += w; else if (nx >= w) nx -= w;
-      if (ny < 0) ny += h; else if (ny >= h) ny -= h;
+      if (nx < 0) nx += w;
+      else if (nx >= w) nx -= w;
+      if (ny < 0) ny += h;
+      else if (ny >= h) ny -= h;
       const ni = ny * w + nx;
       if (moved[ni]) continue;
       const ns = state[ni];
@@ -123,7 +130,8 @@ export function stepEcosystem(sim: Simulation): void {
     const hunt = sp.huntSuccess ?? 1;
     // Hunger gating: a sated predator (energy at/above its threshold) ignores
     // prey. undefined threshold = always hungry, so default behavior is unchanged.
-    const hungry = sp.huntThreshold === undefined || energy[i] < sp.huntThreshold;
+    const hungry =
+      sp.huntThreshold === undefined || energy[i] < sp.huntThreshold;
     if (nf > 0 && hungry && (hunt >= 1 || rand() < hunt)) {
       target = foods[(rand() * nf) | 0];
       ate = true;
@@ -143,7 +151,7 @@ export function stepEcosystem(sim: Simulation): void {
       const parentEnergy = sp.metabolism > 0 ? en - (en >> 1) : en;
       state[i] = s;
       energy[i] = parentEnergy;
-      age[i] = 0;       // parent's breed timer resets, but its life keeps running
+      age[i] = 0; // parent's breed timer resets, but its life keeps running
       moved[i] = 1;
       state[target] = s;
       energy[target] = child;
@@ -180,7 +188,10 @@ export function seedEcosystem(sim: Simulation, rand: () => number): void {
     let assigned = EMPTY;
     for (let s = 1; s < n; s++) {
       acc += species[s].seedDensity;
-      if (r < acc) { assigned = s; break; }
+      if (r < acc) {
+        assigned = s;
+        break;
+      }
     }
     state[i] = assigned;
     if (assigned === EMPTY) {

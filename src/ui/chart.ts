@@ -1,10 +1,14 @@
-import type { Config } from '../core/types';
+import type { Config } from "../core/types";
 
-interface RGB { r: number; g: number; b: number; }
+interface RGB {
+  r: number;
+  g: number;
+  b: number;
+}
 
 function hexToRgb(hex: string): RGB {
-  const h = hex.replace('#', '');
-  const n = parseInt(h.length === 3 ? h.replace(/(.)/g, '$1$1') : h, 16);
+  const h = hex.replace("#", "");
+  const n = parseInt(h.length === 3 ? h.replace(/(.)/g, "$1$1") : h, 16);
   return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
 }
 
@@ -23,7 +27,7 @@ export class PopulationChart {
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
-    this.ctx = canvas.getContext('2d')!;
+    this.ctx = canvas.getContext("2d")!;
   }
 
   /** Reset series + colors for a new universe (wipes history). */
@@ -42,7 +46,7 @@ export class PopulationChart {
   /** Update colors / visibility without wiping history. */
   setColors(cfg: Config): void {
     this.colors = cfg.states.map((s) => s.color);
-    this.skipFirst = cfg.seedMode === 'sparse' || cfg.engine === 'ecosystem';
+    this.skipFirst = cfg.seedMode === "sparse" || cfg.engine === "ecosystem";
     while (this.series.length < cfg.states.length) this.series.push([]);
     this.series.length = cfg.states.length;
   }
@@ -67,11 +71,11 @@ export class PopulationChart {
     const w = this.canvas.width;
     const h = this.canvas.height;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.fillStyle = '#0b0e14';
+    ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, w, h);
 
     // baseline
-    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.strokeStyle = "rgba(255,255,255,0.06)";
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(0, h - 0.5);
@@ -90,7 +94,7 @@ export class PopulationChart {
       if (this.skipFirst && i === 0) continue;
       const a = this.series[i];
       if (a.length < 2) continue;
-      const c = hexToRgb(this.colors[i] ?? '#888');
+      const c = hexToRgb(this.colors[i] ?? "#888");
       ctx.strokeStyle = `rgb(${c.r},${c.g},${c.b})`;
       ctx.lineWidth = 1.5 * this.dpr;
       ctx.beginPath();

@@ -11,12 +11,12 @@ export interface StateDef {
   color: string;
 }
 
-export type CompareOp = '=' | '!=' | '>' | '>=' | '<' | '<=';
+export type CompareOp = "=" | "!=" | ">" | ">=" | "<" | "<=";
 
 /** Right-hand side of a condition: either a constant or another state's count. */
 export type ConditionRhs =
-  | { kind: 'const'; value: number }
-  | { kind: 'count'; state: number };
+  | { kind: "const"; value: number }
+  | { kind: "count"; state: number };
 
 /**
  * One AND-clause of a rule. Reads as:
@@ -45,14 +45,14 @@ export interface Rule {
   prob: number;
 }
 
-export type NeighborhoodType = 'moore' | 'vonneumann';
+export type NeighborhoodType = "moore" | "vonneumann";
 
 export interface Neighborhood {
   type: NeighborhoodType;
   radius: number;
 }
 
-export type SeedMode = 'sparse' | 'uniform';
+export type SeedMode = "sparse" | "uniform";
 
 /**
  * Which stepping engine drives the universe.
@@ -66,7 +66,7 @@ export type SeedMode = 'sparse' | 'uniform';
  *  - 'script':     discrete like 'totalistic', but the per-cell transition is a
  *                  user-supplied JS function (`script`) instead of rule rows.
  */
-export type EngineKind = 'totalistic' | 'ecosystem' | 'reaction' | 'script';
+export type EngineKind = "totalistic" | "ecosystem" | "reaction" | "script";
 
 /**
  * A compiled manual-rule transition. Runs once per cell each generation and
@@ -92,11 +92,11 @@ export type ScriptFn = (
  * wildly different Turing patterns.
  */
 export interface ReactionParams {
-  feed: number;       // F: feed rate of U
-  kill: number;       // k: kill rate of V
-  du: number;         // diffusion rate of U
-  dv: number;         // diffusion rate of V
-  dt: number;         // integration timestep
+  feed: number; // F: feed rate of U
+  kill: number; // k: kill rate of V
+  du: number; // diffusion rate of U
+  dv: number; // diffusion rate of V
+  dt: number; // integration timestep
   iterations: number; // simulation sub-steps per displayed step
   /** Colormap stops (hex), low → high concentration of V. */
   colors: string[];

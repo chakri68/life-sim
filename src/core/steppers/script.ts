@@ -1,4 +1,4 @@
-import type { Simulation } from '../sim';
+import type { Simulation } from "../sim";
 
 // Manual engine: the user supplies a JS transition function (compiled in
 // Simulation.compileScript). It runs once per cell each generation with a small
@@ -37,8 +37,10 @@ export function stepScript(sim: Simulation): boolean {
     for (let k = 0; k < nOff; k++) {
       let nx = px + offs[k * 2];
       let ny = py + offs[k * 2 + 1];
-      if (nx < 0) nx += w; else if (nx >= w) nx -= w;
-      if (ny < 0) ny += h; else if (ny >= h) ny -= h;
+      if (nx < 0) nx += w;
+      else if (nx >= w) nx -= w;
+      if (ny < 0) ny += h;
+      else if (ny >= h) ny -= h;
       if (cur[ny * w + nx] === state) n++;
     }
     return n;
@@ -53,7 +55,7 @@ export function stepScript(sim: Simulation): boolean {
         const self = cur[i];
         const r = fn(self, count, get, x, y, gen, rand);
         // Guard the return: a non-number or out-of-range result leaves the cell.
-        next[i] = typeof r === 'number' && r >= 0 && r < nStates ? r | 0 : self;
+        next[i] = typeof r === "number" && r >= 0 && r < nStates ? r | 0 : self;
       }
     }
   } catch (e) {

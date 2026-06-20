@@ -1,10 +1,14 @@
-import type { Config } from '../core/types';
+import type { Config } from "../core/types";
 
-interface RGB { r: number; g: number; b: number; }
+interface RGB {
+  r: number;
+  g: number;
+  b: number;
+}
 
 function hexToRgb(hex: string): RGB {
-  const h = hex.replace('#', '');
-  const n = parseInt(h.length === 3 ? h.replace(/(.)/g, '$1$1') : h, 16);
+  const h = hex.replace("#", "");
+  const n = parseInt(h.length === 3 ? h.replace(/(.)/g, "$1$1") : h, 16);
   return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
 }
 
@@ -30,9 +34,9 @@ export class Renderer {
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
-    this.ctx = canvas.getContext('2d')!;
-    this.buffer = document.createElement('canvas');
-    this.bctx = this.buffer.getContext('2d')!;
+    this.ctx = canvas.getContext("2d")!;
+    this.buffer = document.createElement("canvas");
+    this.bctx = this.buffer.getContext("2d")!;
     this.img = this.bctx.createImageData(1, 1);
   }
 
@@ -62,7 +66,8 @@ export class Renderer {
       const t = (i / 255) * (stops.length - 1);
       const s = Math.min(stops.length - 2, Math.floor(t));
       const f = t - s;
-      const a = stops[s], b = stops[s + 1];
+      const a = stops[s],
+        b = stops[s + 1];
       lut[i * 3] = a.r + (b.r - a.r) * f;
       lut[i * 3 + 1] = a.g + (b.g - a.g) * f;
       lut[i * 3 + 2] = a.b + (b.b - a.b) * f;
@@ -126,7 +131,7 @@ export class Renderer {
   private present(): void {
     const ctx = this.ctx;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.fillStyle = '#05070b';
+    ctx.fillStyle = "#000000";
     ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
     ctx.imageSmoothingEnabled = false;
     const s = this.camera.scale;

@@ -1,4 +1,4 @@
-import type { Simulation } from '../sim';
+import type { Simulation } from "../sim";
 
 // Gray-Scott reaction-diffusion (continuous engine).
 //
@@ -20,25 +20,41 @@ export function stepReaction(sim: Simulation): void {
   const iters = Math.max(1, p.iterations | 0);
   for (let it = 0; it < iters; it++) {
     rd(sim.u, sim.v, sim.u2, sim.v2, w, h, p.du, p.dv, p.feed, p.kill, p.dt);
-    let t = sim.u; sim.u = sim.u2; sim.u2 = t;
-    t = sim.v; sim.v = sim.v2; sim.v2 = t;
+    let t = sim.u;
+    sim.u = sim.u2;
+    sim.u2 = t;
+    t = sim.v;
+    sim.v = sim.v2;
+    sim.v2 = t;
   }
   sim.generation++;
 }
 
 function rd(
-  u: Float32Array, v: Float32Array, nu: Float32Array, nv: Float32Array,
-  w: number, h: number, Du: number, Dv: number, F: number, k: number, dt: number,
+  u: Float32Array,
+  v: Float32Array,
+  nu: Float32Array,
+  nv: Float32Array,
+  w: number,
+  h: number,
+  Du: number,
+  Dv: number,
+  F: number,
+  k: number,
+  dt: number,
 ): void {
   for (let y = 0; y < h; y++) {
     const yN = (y - 1 + h) % h;
     const yS = (y + 1) % h;
-    const rowN = yN * w, rowS = yS * w, row = y * w;
+    const rowN = yN * w,
+      rowS = yS * w,
+      row = y * w;
     for (let x = 0; x < w; x++) {
       const xW = (x - 1 + w) % w;
       const xE = (x + 1) % w;
       const i = row + x;
-      const u0 = u[i], v0 = v[i];
+      const u0 = u[i],
+        v0 = v[i];
 
       const lapU =
         (u[row + xW] + u[row + xE] + u[rowN + x] + u[rowS + x]) * 0.2 +
@@ -73,8 +89,8 @@ export function seedReaction(sim: Simulation, rand: () => number): void {
     const r = 3 + ((rand() * 5) | 0);
     for (let dy = -r; dy <= r; dy++) {
       for (let dx = -r; dx <= r; dx++) {
-        const x = ((cx + dx) % w + w) % w;
-        const y = ((cy + dy) % h + h) % h;
+        const x = (((cx + dx) % w) + w) % w;
+        const y = (((cy + dy) % h) + h) % h;
         const i = y * w + x;
         u[i] = 0.5;
         v[i] = 0.25;

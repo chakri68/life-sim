@@ -1,4 +1,4 @@
-import type { Config, Rule } from './types';
+import type { Config, Rule } from "./types";
 
 /**
  * Advance the grid one generation (Tier-1 totalistic engine).
@@ -31,8 +31,10 @@ export function step(
         let nx = x + offsets[k * 2];
         let ny = y + offsets[k * 2 + 1];
         // Toroidal wrap.
-        if (nx < 0) nx += w; else if (nx >= w) nx -= w;
-        if (ny < 0) ny += h; else if (ny >= h) ny -= h;
+        if (nx < 0) nx += w;
+        else if (nx >= w) nx -= w;
+        if (ny < 0) ny += h;
+        else if (ny >= h) ny -= h;
         counts[cur[ny * w + nx]]++;
       }
 
@@ -56,7 +58,8 @@ function matches(rule: Rule, counts: Int32Array): boolean {
   for (let i = 0; i < conds.length; i++) {
     const c = conds[i];
     const left = counts[c.state] ?? 0;
-    const right = c.rhs.kind === 'const' ? c.rhs.value : (counts[c.rhs.state] ?? 0);
+    const right =
+      c.rhs.kind === "const" ? c.rhs.value : (counts[c.rhs.state] ?? 0);
     if (!compare(left, c.op, right)) return false;
   }
   return true;
@@ -64,12 +67,19 @@ function matches(rule: Rule, counts: Int32Array): boolean {
 
 function compare(a: number, op: string, b: number): boolean {
   switch (op) {
-    case '=': return a === b;
-    case '!=': return a !== b;
-    case '>': return a > b;
-    case '>=': return a >= b;
-    case '<': return a < b;
-    case '<=': return a <= b;
-    default: return false;
+    case "=":
+      return a === b;
+    case "!=":
+      return a !== b;
+    case ">":
+      return a > b;
+    case ">=":
+      return a >= b;
+    case "<":
+      return a < b;
+    case "<=":
+      return a <= b;
+    default:
+      return false;
   }
 }

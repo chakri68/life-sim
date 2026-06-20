@@ -1,4 +1,4 @@
-import type { Config } from '../core/types';
+import type { Config } from "../core/types";
 
 // Encode/decode a Config to a URL-safe base64 string so whole universes can be
 // shared via the location hash. Only the rules/palette/shape are stored — not
@@ -6,13 +6,13 @@ import type { Config } from '../core/types';
 
 function toBase64(str: string): string {
   const bytes = new TextEncoder().encode(str);
-  let bin = '';
+  let bin = "";
   for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
-  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
 function fromBase64(b64: string): string {
-  const padded = b64.replace(/-/g, '+').replace(/_/g, '/');
+  const padded = b64.replace(/-/g, "+").replace(/_/g, "/");
   const bin = atob(padded);
   const bytes = Uint8Array.from(bin, (c) => c.charCodeAt(0));
   return new TextDecoder().decode(bytes);
@@ -25,7 +25,8 @@ export function encodeConfig(cfg: Config): string {
 export function decodeConfig(encoded: string): Config | null {
   try {
     const cfg = JSON.parse(fromBase64(encoded));
-    if (cfg && Array.isArray(cfg.states) && Array.isArray(cfg.rules)) return cfg as Config;
+    if (cfg && Array.isArray(cfg.states) && Array.isArray(cfg.rules))
+      return cfg as Config;
   } catch {
     /* fall through */
   }
@@ -33,7 +34,7 @@ export function decodeConfig(encoded: string): Config | null {
 }
 
 export function writeUrl(cfg: Config): void {
-  history.replaceState(null, '', '#c=' + encodeConfig(cfg));
+  history.replaceState(null, "", "#c=" + encodeConfig(cfg));
 }
 
 export function readUrl(): Config | null {
