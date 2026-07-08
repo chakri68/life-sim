@@ -10,7 +10,7 @@ even the _kind_ of universe: count-based automata, agent-based ecosystems,
 continuous reaction-diffusion, or a transition function you write in raw JS.
 
 Paint some cells, tweak the rules, hit play, watch what emerges. Then copy a link
-and the whole universe travels with it.
+and the whole universe rides along in it.
 
 > No framework. Vanilla TypeScript + Vite, Canvas2D, ~17 KB of app JS (gzipped).
 > The one heavyweight (CodeMirror) is lazy-loaded and only shows up if you open
@@ -25,11 +25,11 @@ npm run build    # tsc + vite build → dist/
 npm run preview  # serve the production build
 ```
 
-Then open the dev URL, pick something from **Load preset…**, and press play.
+Open the dev URL, pick something from **Load preset…**, hit play.
 
 ## Four kinds of universe
 
-Pick the engine by loading a preset; each one drives the grid differently. The
+Loading a preset picks the engine; each one drives the grid differently. The
 engine internals live in [`src/core`](src/core/README.md) — that README is the
 deep-dive.
 
@@ -38,8 +38,8 @@ deep-dive.
   Scissors (cyclic spirals), and Competitive Life.
 - **Ecosystem** — agent-based, a generalization of WaTor predator-prey. Each
   state is a species with a diet, energy, breeding, lifespan, mobility, and hunt
-  behaviour. Food chains and webs _emerge_ from who-eats-whom — there are presets
-  for a 3-level chain, shared-prey competition, and a 5-species web.
+  behaviour. Food chains and webs _emerge_ from who-eats-whom — presets cover a
+  3-level chain, shared-prey competition, and a 5-species web.
 - **Reaction-diffusion** — continuous Gray-Scott. Cells hold two chemical
   concentrations instead of a discrete state; tiny feed/kill tweaks flip between
   coral, mazes, spots, and travelling waves.
@@ -50,8 +50,8 @@ deep-dive.
 ## Things you can do
 
 - **Paint** with a state brush (left-drag), **pan** (right/middle-drag), **zoom**
-  (wheel) — HiDPI-aware camera. The grid itself wraps toroidally (it's a donut).
-- **Edit rules visually** for totalistic worlds, or tune per-species sliders for
+  (wheel) — HiDPI-aware camera. The grid wraps toroidally (it's a donut).
+- **Edit rules visually** for totalistic worlds, tune per-species sliders for
   ecosystems, or drag feed/kill for reaction-diffusion.
 - **Watch the population chart** — one line per state (or mean concentration for
   reaction).
@@ -61,7 +61,7 @@ deep-dive.
 ## Heads-up: shared links + Manual mode
 
 A Manual-mode universe carries its JS in the link, and that code runs in your
-browser. So a shared Manual link **won't auto-run** — it loads the code into the
+browser. So a shared Manual link **won't auto-run** — it drops the code into the
 editor and waits for you to read it and hit **Apply**. Presets you load yourself
 are trusted and run immediately.
 
@@ -83,13 +83,11 @@ src/
   `el()` helper.
 - **Canvas2D** for the grid (the simulation is plain typed-array loops, not WebGL
   — yet).
-- **CodeMirror 6** for the Manual-mode editor, code-split so it only loads on
-  demand.
+- **CodeMirror 6** for the Manual-mode editor, code-split so it only loads when
+  you actually open it.
 
 ## Status
 
 A weekend-shaped project that kept growing. Built in phases — base automata →
 attribute-cell ecosystems → reaction-diffusion → user-scripted rules. A WebGL
-stepper (for much bigger grids) is the obvious next thing and isn't done yet.
-
-Just exploring the possibilities ✨
+stepper (for much bigger grids) is the obvious next thing, and isn't done yet.
