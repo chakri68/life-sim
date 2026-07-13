@@ -1,17 +1,5 @@
+/* Tokens come from theme.chakri.me/tokens.css (linked in index.html). */
 :root {
-  /* Pure-black amber-phosphor terminal palette. */
-  --bg: #000000;
-  --panel: #0b0b0a;
-  --panel-2: #000;
-  --border: #2b2925;
-  --text: #ece7da;
-  --muted: #8b8574;
-  --accent: #ffb000; /* amber phosphor */
-  --accent-dim: #cc8a00; /* hover / pressed */
-  --warn: #ff6a2b; /* caution states, distinct from accent */
-  --font-pixel: "Press Start 2P", ui-monospace, monospace;
-  --font-mono:
-    "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-family: var(--font-mono);
 }
 
