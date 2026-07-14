@@ -28,8 +28,14 @@
       content="Define your own states, rules, and universe — totalistic automata, agent ecosystems, reaction-diffusion, or raw JS. Paint cells, tweak rules, hit play, share the whole universe in a link."
     />
     <meta property="og:url" content="https://life-sim.chakri.me/" />
-    <meta property="og:image" content="https://life-sim.chakri.me/og-image.png" />
-    <meta property="og:image:alt" content="Life Playground cellular-automaton sandbox" />
+    <meta
+      property="og:image"
+      content="https://life-sim.chakri.me/og-image.png"
+    />
+    <meta
+      property="og:image:alt"
+      content="Life Playground cellular-automaton sandbox"
+    />
     <meta property="og:locale" content="en_US" />
 
     <!-- Twitter -->
@@ -42,7 +48,10 @@
       name="twitter:description"
       content="Define your own states, rules, and universe — totalistic automata, agent ecosystems, reaction-diffusion, or raw JS. Paint, tweak, play, share."
     />
-    <meta name="twitter:image" content="https://life-sim.chakri.me/og-image.png" />
+    <meta
+      name="twitter:image"
+      content="https://life-sim.chakri.me/og-image.png"
+    />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -60,8 +69,12 @@
          and its styles are applied, then reveal — kills the flash of unstyled
          HTML (Vite injects CSS via JS in dev; also guards a slow first load). -->
     <style>
-      html { background: #000; }
-      body { visibility: hidden; }
+      html {
+        background: #000;
+      }
+      body {
+        visibility: hidden;
+      }
     </style>
     <script>
       addEventListener("DOMContentLoaded", function () {
@@ -70,7 +83,13 @@
         });
       });
     </script>
-    <noscript><style>body { visibility: visible; }</style></noscript>
+    <noscript
+      ><style>
+        body {
+          visibility: visible;
+        }
+      </style></noscript
+    >
     <!-- Amber Phosphor theme tokens — single source of truth -->
     <link rel="stylesheet" href="https://theme.chakri.me/tokens.css" />
 
@@ -104,6 +123,14 @@
         }
       }
     </script>
+
+    <!-- Cloudflare Web Analytics -->
+    <script
+      type="module"
+      src="https://static.cloudflareinsights.com/beacon.min.js"
+      data-cf-beacon='{"token": "37fba14d89584fd38227d606322b6b8f"}'
+    ></script>
+    <!-- End Cloudflare Web Analytics -->
   </head>
   <body>
     <div id="app"></div>
