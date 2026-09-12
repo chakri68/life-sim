@@ -515,8 +515,8 @@ select {
   border-color: var(--accent-dim);
 }
 .icon-btn.danger:hover {
-  color: #ff6b6b;
-  border-color: #ff6b6b;
+  color: var(--danger);
+  border-color: var(--danger);
 }
 
 .add-cond,
@@ -710,7 +710,7 @@ select {
   display: none;
   margin: 8px 0 0;
   padding: 8px 10px;
-  border: 1px solid #ff6b6b;
+  border: 1px solid var(--danger);
   border-radius: 6px;
   background: rgba(255, 107, 107, 0.08);
   color: #ff9b9b;
