@@ -1,7 +1,7 @@
 {
   "name": "Life Playground",
   "short_name": "Life Playground",
-  "description": "A configurable, multi-state cellular-automaton playground — totalistic automata, agent ecosystems, reaction-diffusion, or raw JS.",
+  "description": "A configurable, multi-state cellular-automaton playground: totalistic automata, agent ecosystems, reaction-diffusion, or raw JS.",
   "start_url": "/",
   "icons": [
     {
